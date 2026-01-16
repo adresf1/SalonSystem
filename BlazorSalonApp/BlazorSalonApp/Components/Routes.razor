@@ -1,0 +1,61 @@
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="unauthorized-page">
+                            <h1>⛔ Ingen Adgang</h1>
+                            <p>Du har ikke tilladelse til at se denne side.</p>
+                            <a href="/" class="btn btn-primary">Gå til forsiden</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="unauthorized-page">
+                            <h1>🔒 Login Påkrævet</h1>
+                            <p>Du skal være logget ind for at se denne side.</p>
+                            <a href="/auth/login" class="btn btn-primary">Log ind</a>
+                        </div>
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Ikke fundet</PageTitle>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <div class="not-found-page">
+                    <h1>404</h1>
+                    <p>Siden blev ikke fundet.</p>
+                    <a href="/" class="btn btn-primary">Gå til forsiden</a>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+<style>
+    .unauthorized-page,
+    .not-found-page {
+        text-align: center;
+        padding: 4rem 2rem;
+        max-width: 600px;
+        margin: 4rem auto;
+    }
+
+    .unauthorized-page h1,
+    .not-found-page h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .unauthorized-page p,
+    .not-found-page p {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 2rem;
+    }
+</style>

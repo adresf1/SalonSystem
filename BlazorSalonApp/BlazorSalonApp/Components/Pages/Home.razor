@@ -1,0 +1,288 @@
+﻿@page "/"
+
+<PageTitle>Forside</PageTitle>
+
+<div class="home-container">
+    <div class="hero-section">
+        <h1>✂️ Velkommen til Salon Booking System</h1>
+        <p class="lead">Moderne bookingsystem til frisører og skønhedssaloner</p>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="user-welcome">
+                <h2>Hej, @context.User.Identity?.Name! 👋</h2>
+                <p>Du er logget ind som: <strong>@GetUserRole(context)</strong></p>
+
+                <div class="quick-actions">
+                    <AuthorizeView Roles="SYSTEM_ADMIN" Context="adminContext">
+                        <Authorized>
+                        <div class="action-card">
+                            <h3>🔧 Administrator</h3>
+                            <p>Administrer saloner og system</p>
+                            <a href="/admin/Dashboard" class="btn btn-primary">Gå til Admin Dashboard</a>
+                        </div>
+                        </Authorized>
+                    </AuthorizeView>
+
+                    <AuthorizeView Roles="BUSINESS_OWNER" Context="ownerContext">
+                        <Authorized>
+                        <div class="action-card">
+                            <h3>💼 Min Salon</h3>
+                            <p>Administrer din salon og bookinger</p>
+                            <a href="/Business/BusinessDashbord" class="btn btn-primary">Gå til Mit Dashboard</a>
+                        </div>
+                        </Authorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="features-section">
+                <h2>Funktioner</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📅</div>
+                        <h3>Online Booking</h3>
+                        <p>Kunder kan booke online 24/7</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✂️</div>
+                        <h3>Service Administration</h3>
+                        <p>Nem styring af services og priser</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Oversigt</h3>
+                        <p>Se dagens og kommende bookinger</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔔</div>
+                        <h3>Notifikationer</h3>
+                        <p>Hold styr på alle aftaler</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <h2>Kom i gang</h2>
+                <p>Log ind for at administrere din salon</p>
+                <a href="/login" class="btn btn-primary btn-lg">Log ind nu</a>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code
+ 
+{
+
+
+private
+
+string
+
+GetUserRole
+(
+AuthenticationState
+context
+)
+
+
+{
+
+
+var
+role
+=
+context
+.
+User
+.
+FindFirst
+(
+System
+.
+Security
+.
+Claims
+.
+ClaimTypes
+.
+Role
+)
+?.
+Value
+;
+
+
+return
+role
+switch
+
+
+{
+
+
+"SYSTEM_ADMIN"
+
+=>
+
+"System Administrator"
+,
+
+
+"BUSINESS_OWNER"
+
+=>
+
+"Salon Ejer"
+,
+
+_
+=>
+
+"Bruger"
+
+
+}
+;
+
+
+}
+
+}
+
+
+<style>
+    .home-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .hero-section {
+        text-align: center;
+        padding: 3rem 1rem;
+        margin-bottom: 3rem;
+    }
+
+    .hero-section h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .lead {
+        font-size: 1.3rem;
+        color: #666;
+    }
+
+    .user-welcome {
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .action-card {
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .action-card h3 {
+        margin-bottom: 1rem;
+    }
+
+    .action-card p {
+        margin-bottom: 1.5rem;
+        opacity: 0.9;
+    }
+
+    .action-card .btn {
+        background: white;
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .features-section {
+        margin: 4rem 0;
+    }
+
+    .features-section h2 {
+        text-align: center;
+        margin-bottom: 3rem;
+        font-size: 2rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-card {
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .feature-card p {
+        color: #666;
+    }
+
+    .cta-section {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        margin-top: 4rem;
+    }
+
+    .cta-section h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .cta-section p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+    }
+
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+    }
+</style>

@@ -1,0 +1,166 @@
+﻿@page "/admin/businesses/create"
+@attribute [Authorize(Roles = "SYSTEM_ADMIN")]
+@using BlazorSalonApp.Dto
+@using BlazorSalonApp.Services
+@using Microsoft.AspNetCore.Authorization
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Opret Salon</PageTitle>
+
+<div class="create-container">
+    <h1>Opret Ny Salon</h1>
+
+    @if (_createdBusiness != null)
+    {
+        <div class="success-card">
+            <h2>✅ Salon Oprettet!</h2>
+
+            <div class="credentials">
+                <h3>Send disse oplysninger til ejeren:</h3>
+
+                <div class="credential-item">
+                    <strong>Email:</strong> @_createdBusiness.OwnerEmail
+                </div>
+
+                <div class="credential-item">
+                    <strong>Brugernavn:</strong> <code>@_createdBusiness.OwnerUsername</code>
+                </div>
+
+                <div class="credential-item">
+                    <strong>Midlertidig adgangskode:</strong> <code>@_createdBusiness.TemporaryPassword</code>
+                </div>
+
+                <div class="credential-item">
+                    <strong>Booking URL:</strong>
+                    <a href="@_createdBusiness.BookingUrl" target="_blank">@_createdBusiness.BookingUrl</a>
+                </div>
+            </div>
+
+            <div class="email-template">
+                <h4>Email Template:</h4>
+                <pre>@GetEmailTemplate()</pre>
+                <button class="btn btn-secondary" @onclick="CopyToClipboard">📋 Kopier Email</button>
+            </div>
+
+            <button class="btn btn-primary" @onclick="CreateAnother">Opret Endnu En Salon</button>
+            <button class="btn btn-secondary" @onclick="BackToDashboard">Tilbage til Dashboard</button>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">
+                @_errorMessage
+            </div>
+        }
+
+        <EditForm Model="@_businessRequest" OnValidSubmit="HandleSubmit" class="business-form">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label>Salon Navn *</label>
+                <InputText @bind-Value="_businessRequest.Name" class="form-control" placeholder="f.eks. Premium Barber Shop" />
+                <small>Dette navn vises til kunder</small>
+            </div>
+
+            <div class="form-group">
+                <label>Slug (URL) *</label>
+                <InputText @bind-Value="_businessRequest.Slug" class="form-control" placeholder="f.eks. premium-barber" />
+                <small>Kun små bogstaver, tal og bindestreger. Bliver til: /book/<strong>@_businessRequest.Slug</strong></small>
+            </div>
+
+            <div class="form-group">
+                <label>Ejer Email *</label>
+                <InputText @bind-Value="_businessRequest.OwnerEmail" class="form-control" placeholder="f.eks. john@barber.dk" />
+                <small>Login oplysninger sendes til denne email</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" disabled="@_isLoading">
+                    @if (_isLoading)
+                    {
+                        <span>Opretter...</span>
+                    }
+                    else
+                    {
+                        <span>Opret Salon</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="BackToDashboard">Annuller</button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private BusinessRequest _businessRequest = new();
+    private BusinessWithOwnerResponse? _createdBusiness;
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            _createdBusiness = await ApiService.CreateBusinessAsync(_businessRequest);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fejl ved oprettelse: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetEmailTemplate()
+    {
+        if (_createdBusiness == null) return "";
+
+        return $@"Hej!
+
+Din frisørsalon '{_createdBusiness.BusinessName}' er nu oprettet i booking systemet.
+
+LOGIN OPLYSNINGER:
+Brugernavn: {_createdBusiness.OwnerUsername}
+Adgangskode: {_createdBusiness.TemporaryPassword}
+
+Login her: http://localhost:5000/login
+
+BOOKING URL (del med kunder):
+{_createdBusiness.BookingUrl}
+
+Efter login kan du:
+- Tilføje dine services (klipning, barbering, osv.)
+- Se dagens bookinger
+- Administrere kommende aftaler
+
+Venlig hilsen
+Booking System";
+    }
+
+    private void CopyToClipboard()
+    {
+        // Note: Requires JavaScript interop in production
+        Console.WriteLine("Email template copied!");
+    }
+
+    private void CreateAnother()
+    {
+        _businessRequest = new();
+        _createdBusiness = null;
+        _errorMessage = null;
+    }
+
+    private void BackToDashboard()
+    {
+        Navigation.NavigateTo("/admin/dashboard");
+    }
+}
+

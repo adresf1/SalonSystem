@@ -1,0 +1,179 @@
+﻿@page "/business/dashboard"
+@attribute [Authorize(Roles = "BUSINESS_OWNER")]
+@using BlazorSalonApp.Dto
+@using Microsoft.AspNetCore.Authorization
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Min Salon</PageTitle>
+
+<div class="dashboard-container">
+    @if (isLoading)
+    {
+        <div class="loading">
+            Henter data...
+        </div>
+    }
+    else
+    {
+        <div class="header">
+            <h1>@business?.Name</h1>
+            <span class="status-badge @(business?.Active == true ? "active" : "inactive")">
+                @(business?.Active == true ? "Aktiv" : "Inaktiv")
+            </span>
+        </div>
+
+        <div class="info-card">
+            <h3>📍 Booking Information</h3>
+            <p><strong>Booking URL:</strong></p>
+            <div class="url-box">
+                <code>@business?.BookingUrl</code>
+                <button class="btn-copy" @onclick="CopyUrl">📋 Kopier</button>
+            </div>
+            <small>Del denne URL med dine kunder</small>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">@services.Count</div>
+                <div class="stat-label">Services</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@todayBookings.Count</div>
+                <div class="stat-label">Dagens bookinger</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@allBookings.Count</div>
+                <div class="stat-label">Totale bookinger</div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/business/services")'>
+                ✂️ Administrer Services
+            </button>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/business/bookings")'>
+                📅 Se Alle Bookinger
+            </button>
+        </div>
+
+        <div class="today-bookings">
+            <h2>📅 Dagens Bookinger</h2>
+            @if (todayBookings.Any())
+            {
+                <div class="bookings-list">
+                    @foreach (var booking in todayBookings.OrderBy(b => b.StartTime))
+                    {
+                        <div class="booking-card @booking.Status.ToLower()">
+                            <div class="booking-time">
+                                @booking.StartTime.ToString("HH:mm") - @booking.EndTime.ToString("HH:mm")
+                            </div>
+                            <div class="booking-details">
+                                <strong>@booking.CustomerName</strong>
+                                <div>@booking.Service.Name (@booking.Service.DurationMinutes min)</div>
+                                <div class="booking-phone">📞 @booking.CustomerPhone</div>
+                            </div>
+                            <div class="booking-status">
+                                <span class="status-badge @booking.Status.ToLower()">
+                                    @booking.Status
+                                </span>
+                            </div>
+                            @if (booking.Status == "CONFIRMED")
+                            {
+                                <div class="booking-actions">
+                                    <button class="btn btn-sm btn-success" @onclick="() => CompleteBooking(booking.Id)">
+                                        ✓ Færdig
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => CancelBooking(booking.Id)">
+                                        ✗ Aflyse
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>📭 Ingen bookinger i dag</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private BusinessResponse? business;
+    private List<ServiceResponse> services = new();
+    private List<BookingResponse> todayBookings = new();
+    private List<BookingResponse> allBookings = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Load all data in parallel
+            var businessTask = ApiService.GetMyBusinessAsync();
+            var servicesTask = ApiService.GetMyServicesAsync();
+            var todayTask = ApiService.GetTodayBookingsAsync();
+            var allTask = ApiService.GetAllMyBookingsAsync();
+
+            await Task.WhenAll(businessTask, servicesTask, todayTask, allTask);
+
+            business = await businessTask;
+            services = await servicesTask;
+            todayBookings = await todayTask;
+            allBookings = await allTask;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CompleteBooking(long bookingId)
+    {
+        try
+        {
+            await ApiService.CompleteBookingAsync(bookingId);
+            await LoadData(); // Reload
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error completing booking: {ex.Message}");
+        }
+    }
+
+    private async Task CancelBooking(long bookingId)
+    {
+        try
+        {
+            await ApiService.CancelBookingAsync(bookingId);
+            await LoadData(); // Reload
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error canceling booking: {ex.Message}");
+        }
+    }
+
+    private void CopyUrl()
+    {
+        // Note: Requires JavaScript interop in production
+        Console.WriteLine($"Copied: {business?.BookingUrl}");
+    }
+}
+

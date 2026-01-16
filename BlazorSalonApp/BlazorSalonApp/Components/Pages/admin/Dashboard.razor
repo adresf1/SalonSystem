@@ -1,0 +1,127 @@
+﻿@page "/admin/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using BlazorSalonApp.Dto
+@using BlazorSalonApp.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@attribute [Authorize(Roles = "SYSTEM_ADMIN")]
+
+<PageTitle>Admin Dashboard</PageTitle>
+
+<div class="dashboard-container">
+    <h1>System Admin Dashboard</h1>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" @onclick="NavigateToCreateBusiness">
+            ➕ Opret Ny Salon
+        </button>
+    </div>
+
+
+    @if (isLoading)
+    {
+        <div class="loading">Henter data...</div>
+    }
+    else
+    {
+        <div class="businesses-grid">
+            <h2>Alle Saloner (@businesses.Count)</h2>
+            
+            @if (businesses.Any())
+            {
+                <table class="businesses-table">
+                    <thead>
+                        <tr>
+                            <th>Navn</th>
+                            <th>Slug</th>
+                            <th>Status</th>
+                            <th>Booking URL</th>
+                            <th>Oprettet</th>
+                            <th>Handlinger</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var business in businesses)
+                        {
+                            <tr>
+                                <td>@business.Name</td>
+                                <td><code>@business.Slug</code></td>
+                                <td>
+                                    <span class="status-badge @(business.Active ? "active" : "inactive")">
+                                        @(business.Active ? "Aktiv" : "Inaktiv")
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="@business.BookingUrl" target="_blank" class="link">
+                                        Åbn booking side
+                                    </a>
+                                </td>
+                                <td>@business.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <button class="btn btn-sm" @onclick="() => ToggleStatus(business)">
+                                        @(business.Active ? "Deaktiver" : "Aktiver")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>Ingen saloner oprettet endnu.</p>
+                    <button class="btn btn-primary" @onclick="NavigateToCreateBusiness">
+                        Opret den første salon
+                    </button>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    private List<BusinessResponse> businesses = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBusinesses();
+    }
+
+    private async Task LoadBusinesses()
+    {
+        try
+        {
+            isLoading = true;
+            businesses = await ApiService.GetAllBusinessesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading businesses: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleStatus(BusinessResponse business)
+    {
+        try
+        {
+            await ApiService.UpdateBusinessStatusAsync(business.Id, !business.Active);
+            await LoadBusinesses(); // Reload
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling status: {ex.Message}");
+        }
+    }
+
+    private void NavigateToCreateBusiness()
+    {
+        Navigation.NavigateTo("/admin/businesses/create");
+    }
+}
