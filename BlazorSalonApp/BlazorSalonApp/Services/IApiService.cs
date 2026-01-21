@@ -31,4 +31,5 @@ public interface IApiService
     // Public - Booking
     Task<List<ServiceResponse>> GetPublicServicesAsync(string businessSlug);
     Task<BookingResponse> CreatePublicBookingAsync(string businessSlug, BookingRequest request);
+    Task<AvailableTimesResponse> GetAvailableTimeSlotsAsync(string businessSlug, DateTime date, long serviceId);
 }

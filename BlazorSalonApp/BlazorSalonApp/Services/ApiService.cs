@@ -155,9 +155,43 @@ public class ApiService : IApiService
 
     public async Task<BookingResponse> CreatePublicBookingAsync(string businessSlug, BookingRequest request)
     {
-        var response = await _http.PostAsJsonAsync($"public/{businessSlug}/bookings", request);
-        response.EnsureSuccessStatusCode();
+        var url = $"public/{businessSlug}/bookings";
+        Console.WriteLine($"Creating booking at: {url}");
+        Console.WriteLine($"Request data - ServiceId: {request.ServiceId}, StartTime: {request.StartTime}, Name: {request.CustomerName}, Phone: {request.CustomerPhone}");
+        
+        var response = await _http.PostAsJsonAsync(url, request);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Booking failed with status {response.StatusCode}");
+            Console.WriteLine($"Error response: {errorContent}");
+            throw new HttpRequestException($"Booking failed ({response.StatusCode}): {errorContent}");
+        }
+        
         return await response.Content.ReadFromJsonAsync<BookingResponse>() 
-            ?? throw new Exception("Failed to create booking");
+            ?? throw new Exception("Failed to parse booking response");
+    }
+
+    public async Task<AvailableTimesResponse> GetAvailableTimeSlotsAsync(string businessSlug, DateTime date, long serviceId)
+    {
+        // Ensure we only use the date part, no time
+        var dateOnly = date.Date;
+        var dateStr = dateOnly.ToString("yyyy-MM-dd");
+        var url = $"public/{businessSlug}/available-times?date={dateStr}&serviceId={serviceId}";
+        
+        Console.WriteLine($"Calling: {url}");
+        
+        var response = await _http.GetAsync(url);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error response: {errorContent}");
+            throw new Exception($"Failed to get available times: {response.StatusCode}");
+        }
+        
+        return await response.Content.ReadFromJsonAsync<AvailableTimesResponse>() 
+            ?? throw new Exception("Failed to parse available times response");
     }
 }

@@ -25,6 +25,6 @@ public class BookingRequest {
     private String customerName;
 
     @NotBlank
-    @Pattern(regexp = "^[+]?[0-9]{8,15}$")
+    @Pattern(regexp = "^[+]?[0-9]{8,15}$", message = "Phone number must be 8-15 digits, optionally starting with +")
     private String customerPhone;
 }
