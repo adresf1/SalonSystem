@@ -1,5 +1,7 @@
 package com.example.salon.service;
 
+import com.example.salon.dto.AvailableTimeSlot;
+import com.example.salon.dto.AvailableTimesResponse;
 import com.example.salon.dto.BookingRequest;
 import com.example.salon.dto.BookingResponse;
 import com.example.salon.dto.ServiceResponse;
@@ -17,7 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -120,6 +125,79 @@ public class BookingService {
         bookingRepository.save(booking);
 
         log.info("Booking cancelled: {}", bookingId);
+    }
+
+    @Transactional(readOnly = true)
+    public AvailableTimesResponse getAvailableTimeSlots(String businessSlug, LocalDate date, Long serviceId) {
+        // Find and validate business
+        Business business = businessRepository.findBySlug(businessSlug)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found: " + businessSlug));
+
+        if (!business.getActive()) {
+            throw new BusinessNotActiveException("Business is not accepting bookings");
+        }
+
+        // Find and validate service
+        Service service = serviceRepository.findByIdAndBusinessId(serviceId, business.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+
+        if (!service.getActive()) {
+            throw new ResourceNotFoundException("Service is not available");
+        }
+
+        // Get all bookings for this day
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1);
+
+        List<Booking> existingBookings = bookingRepository
+                .findByBusinessIdAndStartTimeBetween(business.getId(), startOfDay, endOfDay);
+
+        // Generate time slots (9:00 - 18:00 in 30 minute intervals)
+        List<AvailableTimeSlot> timeSlots = new ArrayList<>();
+        LocalTime startTime = LocalTime.of(9, 0);
+        LocalTime endTime = LocalTime.of(18, 0);
+        int intervalMinutes = 30;
+
+        while (startTime.isBefore(endTime)) {
+            LocalDateTime slotStart = LocalDateTime.of(date, startTime);
+            LocalDateTime slotEnd = slotStart.plusMinutes(service.getDurationMinutes());
+
+            // Check if this slot conflicts with any existing booking
+            boolean isAvailable = !hasConflict(slotStart, slotEnd, existingBookings);
+
+            // Don't allow booking in the past
+            if (slotStart.isBefore(LocalDateTime.now())) {
+                isAvailable = false;
+            }
+
+            timeSlots.add(AvailableTimeSlot.builder()
+                    .startTime(slotStart)
+                    .endTime(slotEnd)
+                    .available(isAvailable)
+                    .build());
+
+            startTime = startTime.plusMinutes(intervalMinutes);
+        }
+
+        return AvailableTimesResponse.builder()
+                .date(date)
+                .timeSlots(timeSlots)
+                .build();
+    }
+
+    private boolean hasConflict(LocalDateTime slotStart, LocalDateTime slotEnd, List<Booking> existingBookings) {
+        for (Booking booking : existingBookings) {
+            // Skip cancelled bookings
+            if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
+                continue;
+            }
+
+            // Check if there's any overlap
+            if (slotStart.isBefore(booking.getEndTime()) && slotEnd.isAfter(booking.getStartTime())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private BookingResponse mapToBookingResponse(Booking booking) {

@@ -1,0 +1,158 @@
+.calendar-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.nav-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.nav-btn:hover {
+    background: #0056b3;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.calendar-day {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.calendar-day:hover:not(.past) {
+    border-color: #007bff;
+    background: #f0f8ff;
+    transform: translateY(-2px);
+}
+
+.calendar-day.selected {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.calendar-day.past {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.day-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.day-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.day-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.time-slots-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.time-slots-section h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.loading-slots,
+.no-slots {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.time-slot {
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.time-slot.available:hover {
+    border-color: #28a745;
+    background: #e8f5e9;
+    transform: scale(1.05);
+}
+
+.time-slot.available {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.time-slot.occupied {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.time-slot.selected {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+    transform: scale(1.05);
+}
+
+.time-slot:disabled {
+    cursor: not-allowed;
+}
