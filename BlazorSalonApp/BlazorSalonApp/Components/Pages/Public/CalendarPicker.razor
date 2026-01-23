@@ -23,18 +23,18 @@
     @if (SelectedDate.HasValue && SelectedService != null)
     {
         <div class="time-slots-section">
-            <h4>Vælg tidspunkt - @SelectedDate.Value.ToString("dddd, d. MMMM")</h4>
+            <h4>Select time - @SelectedDate.Value.ToString("dddd, d. MMMM")</h4>
             
             @if (isLoadingSlots)
             {
                 <div class="loading-slots">
-                    <p>Henter ledige tider...</p>
+                    <p>Loading available times...</p>
                 </div>
             }
             else if (availableSlots == null || !availableSlots.TimeSlots.Any())
             {
                 <div class="no-slots">
-                    <p>Ingen ledige tider denne dag</p>
+                    <p>No available times this day</p>
                 </div>
             }
             else

@@ -6,29 +6,29 @@
 @inject IApiService ApiService
 @inject NavigationManager Navigation
 
-<PageTitle>Opret Salon</PageTitle>
+<PageTitle>Create Salon</PageTitle>
 
 <div class="create-container">
-    <h1>Opret Ny Salon</h1>
+    <h1>Create New Salon</h1>
 
     @if (_createdBusiness != null)
     {
         <div class="success-card">
-            <h2>✅ Salon Oprettet!</h2>
+            <h2>✅ Salon Created!</h2>
 
             <div class="credentials">
-                <h3>Send disse oplysninger til ejeren:</h3>
+                <h3>Send these details to the owner:</h3>
 
                 <div class="credential-item">
                     <strong>Email:</strong> @_createdBusiness.OwnerEmail
                 </div>
 
                 <div class="credential-item">
-                    <strong>Brugernavn:</strong> <code>@_createdBusiness.OwnerUsername</code>
+                    <strong>Username:</strong> <code>@_createdBusiness.OwnerUsername</code>
                 </div>
 
                 <div class="credential-item">
-                    <strong>Midlertidig adgangskode:</strong> <code>@_createdBusiness.TemporaryPassword</code>
+                    <strong>Temporary password:</strong> <code>@_createdBusiness.TemporaryPassword</code>
                 </div>
 
                 <div class="credential-item">
@@ -40,11 +40,11 @@
             <div class="email-template">
                 <h4>Email Template:</h4>
                 <pre>@GetEmailTemplate()</pre>
-                <button class="btn btn-secondary" @onclick="CopyToClipboard">📋 Kopier Email</button>
+                <button class="btn btn-secondary" @onclick="CopyToClipboard">📋 Copy Email</button>
             </div>
 
-            <button class="btn btn-primary" @onclick="CreateAnother">Opret Endnu En Salon</button>
-            <button class="btn btn-secondary" @onclick="BackToDashboard">Tilbage til Dashboard</button>
+            <button class="btn btn-primary" @onclick="CreateAnother">Create Another Salon</button>
+            <button class="btn btn-secondary" @onclick="BackToDashboard">Back to Dashboard</button>
         </div>
     }
     else
@@ -60,35 +60,35 @@
             <DataAnnotationsValidator />
 
             <div class="form-group">
-                <label>Salon Navn *</label>
-                <InputText @bind-Value="_businessRequest.Name" class="form-control" placeholder="f.eks. Premium Barber Shop" />
-                <small>Dette navn vises til kunder</small>
+                <label>Salon Name *</label>
+                <InputText @bind-Value="_businessRequest.Name" class="form-control" placeholder="e.g. Premium Barber Shop" />
+                <small>This name is shown to customers</small>
             </div>
 
             <div class="form-group">
                 <label>Slug (URL) *</label>
-                <InputText @bind-Value="_businessRequest.Slug" class="form-control" placeholder="f.eks. premium-barber" />
-                <small>Kun små bogstaver, tal og bindestreger. Bliver til: /book/<strong>@_businessRequest.Slug</strong></small>
+                <InputText @bind-Value="_businessRequest.Slug" class="form-control" placeholder="e.g. premium-barber" />
+                <small>Only lowercase letters, numbers and hyphens. Will become: /book/<strong>@_businessRequest.Slug</strong></small>
             </div>
 
             <div class="form-group">
-                <label>Ejer Email *</label>
-                <InputText @bind-Value="_businessRequest.OwnerEmail" class="form-control" placeholder="f.eks. john@barber.dk" />
-                <small>Login oplysninger sendes til denne email</small>
+                <label>Owner Email *</label>
+                <InputText @bind-Value="_businessRequest.OwnerEmail" class="form-control" placeholder="e.g. john@barber.dk" />
+                <small>Login details will be sent to this email</small>
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary" disabled="@_isLoading">
                     @if (_isLoading)
                     {
-                        <span>Opretter...</span>
+                        <span>Creating...</span>
                     }
                     else
                     {
-                        <span>Opret Salon</span>
+                        <span>Create Salon</span>
                     }
                 </button>
-                <button type="button" class="btn btn-secondary" @onclick="BackToDashboard">Annuller</button>
+                <button type="button" class="btn btn-secondary" @onclick="BackToDashboard">Cancel</button>
             </div>
         </EditForm>
     }
@@ -111,7 +111,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Fejl ved oprettelse: {ex.Message}";
+            _errorMessage = $"Error creating salon: {ex.Message}";
         }
         finally
         {
@@ -123,25 +123,25 @@
     {
         if (_createdBusiness == null) return "";
 
-        return $@"Hej!
+        return $@"Hello!
 
-Din frisørsalon '{_createdBusiness.BusinessName}' er nu oprettet i booking systemet.
+Your salon '{_createdBusiness.BusinessName}' has been created in the booking system.
 
-LOGIN OPLYSNINGER:
-Brugernavn: {_createdBusiness.OwnerUsername}
-Adgangskode: {_createdBusiness.TemporaryPassword}
+LOGIN DETAILS:
+Username: {_createdBusiness.OwnerUsername}
+Password: {_createdBusiness.TemporaryPassword}
 
-Login her: http://localhost:5000/login
+Log in here: http://localhost:5000/login
 
-BOOKING URL (del med kunder):
+BOOKING URL (share with customers):
 {_createdBusiness.BookingUrl}
 
-Efter login kan du:
-- Tilføje dine services (klipning, barbering, osv.)
-- Se dagens bookinger
-- Administrere kommende aftaler
+After logging in, you can:
+- Add your services (haircut, shaving, etc.)
+- View today's bookings
+- Manage upcoming appointments
 
-Venlig hilsen
+Best regards
 Booking System";
     }
 

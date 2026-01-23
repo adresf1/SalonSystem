@@ -1,26 +1,26 @@
 ﻿@page "/"
 
-<PageTitle>Forside</PageTitle>
+<PageTitle>Home</PageTitle>
 
 <div class="home-container">
     <div class="hero-section">
-        <h1>✂️ Velkommen til Salon Booking System</h1>
-        <p class="lead">Moderne bookingsystem til frisører og skønhedssaloner</p>
+        <h1>✂️ Welcome to Salon Booking System</h1>
+        <p class="lead">Modern booking system for hairdressers and beauty salons</p>
     </div>
 
     <AuthorizeView>
         <Authorized>
             <div class="user-welcome">
-                <h2>Hej, @context.User.Identity?.Name! 👋</h2>
-                <p>Du er logget ind som: <strong>@GetUserRole(context)</strong></p>
+                <h2>Hello, @context.User.Identity?.Name! 👋</h2>
+                <p>You are logged in as: <strong>@GetUserRole(context)</strong></p>
 
                 <div class="quick-actions">
                     <AuthorizeView Roles="SYSTEM_ADMIN" Context="adminContext">
                         <Authorized>
                         <div class="action-card">
                             <h3>🔧 Administrator</h3>
-                            <p>Administrer saloner og system</p>
-                            <a href="/admin/Dashboard" class="btn btn-primary">Gå til Admin Dashboard</a>
+                            <p>Manage salons and system</p>
+                            <a href="/admin/Dashboard" class="btn btn-primary">Go to Admin Dashboard</a>
                         </div>
                         </Authorized>
                     </AuthorizeView>
@@ -28,9 +28,9 @@
                     <AuthorizeView Roles="BUSINESS_OWNER" Context="ownerContext">
                         <Authorized>
                         <div class="action-card">
-                            <h3>💼 Min Salon</h3>
-                            <p>Administrer din salon og bookinger</p>
-                            <a href="/Business/BusinessDashbord" class="btn btn-primary">Gå til Mit Dashboard</a>
+                            <h3>💼 My Salon</h3>
+                            <p>Manage your salon and bookings</p>
+                            <a href="/business/dashboard" class="btn btn-primary">Go to My Dashboard</a>
                         </div>
                         </Authorized>
                     </AuthorizeView>
@@ -39,35 +39,35 @@
         </Authorized>
         <NotAuthorized>
             <div class="features-section">
-                <h2>Funktioner</h2>
+                <h2>Features</h2>
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon">📅</div>
                         <h3>Online Booking</h3>
-                        <p>Kunder kan booke online 24/7</p>
+                        <p>Customers can book online 24/7</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">✂️</div>
-                        <h3>Service Administration</h3>
-                        <p>Nem styring af services og priser</p>
+                        <h3>Service Management</h3>
+                        <p>Easy management of services and prices</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">📊</div>
-                        <h3>Oversigt</h3>
-                        <p>Se dagens og kommende bookinger</p>
+                        <h3>Overview</h3>
+                        <p>View today's and upcoming bookings</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">🔔</div>
-                        <h3>Notifikationer</h3>
-                        <p>Hold styr på alle aftaler</p>
+                        <h3>Notifications</h3>
+                        <p>Keep track of all appointments</p>
                     </div>
                 </div>
             </div>
 
             <div class="cta-section">
-                <h2>Kom i gang</h2>
-                <p>Log ind for at administrere din salon</p>
-                <a href="/login" class="btn btn-primary btn-lg">Log ind nu</a>
+                <h2>Get Started</h2>
+                <p>Log in to manage your salon</p>
+                <a href="/login" class="btn btn-primary btn-lg">Log in now</a>
             </div>
         </NotAuthorized>
     </AuthorizeView>
@@ -285,4 +285,5 @@ _
         padding: 1rem 2rem;
         font-size: 1.2rem;
     }
+    
 </style>

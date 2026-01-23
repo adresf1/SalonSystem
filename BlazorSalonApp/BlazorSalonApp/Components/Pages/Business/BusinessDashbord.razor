@@ -5,13 +5,13 @@
 @inject IApiService ApiService
 @inject NavigationManager Navigation
 
-<PageTitle>Min Salon</PageTitle>
+<PageTitle>My Salon</PageTitle>
 
 <div class="dashboard-container">
     @if (isLoading)
     {
         <div class="loading">
-            Henter data...
+            Loading data...
         </div>
     }
     else
@@ -19,7 +19,7 @@
         <div class="header">
             <h1>@business?.Name</h1>
             <span class="status-badge @(business?.Active == true ? "active" : "inactive")">
-                @(business?.Active == true ? "Aktiv" : "Inaktiv")
+                @(business?.Active == true ? "Active" : "Inactive")
             </span>
         </div>
 
@@ -28,9 +28,9 @@
             <p><strong>Booking URL:</strong></p>
             <div class="url-box">
                 <code>@business?.BookingUrl</code>
-                <button class="btn-copy" @onclick="CopyUrl">📋 Kopier</button>
+                <button class="btn-copy" @onclick="CopyUrl">📋 Copy</button>
             </div>
-            <small>Del denne URL med dine kunder</small>
+            <small>Share this URL with your customers</small>
         </div>
 
         <div class="stats-grid">
@@ -40,25 +40,28 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value">@todayBookings.Count</div>
-                <div class="stat-label">Dagens bookinger</div>
+                <div class="stat-label">Today's bookings</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value">@allBookings.Count</div>
-                <div class="stat-label">Totale bookinger</div>
+                <div class="stat-label">Total bookings</div>
             </div>
         </div>
 
         <div class="quick-actions">
             <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/business/services")'>
-                ✂️ Administrer Services
+                ✂️ Manage Services
+            </button>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/business/hours")'>
+                🕐 Opening Hours
             </button>
             <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/business/bookings")'>
-                📅 Se Alle Bookinger
+                📅 View All Bookings
             </button>
         </div>
 
         <div class="today-bookings">
-            <h2>📅 Dagens Bookinger</h2>
+            <h2>📅 Today's Bookings</h2>
             @if (todayBookings.Any())
             {
                 <div class="bookings-list">
@@ -82,10 +85,10 @@
                             {
                                 <div class="booking-actions">
                                     <button class="btn btn-sm btn-success" @onclick="() => CompleteBooking(booking.Id)">
-                                        ✓ Færdig
+                                        ✓ Complete
                                     </button>
                                     <button class="btn btn-sm btn-danger" @onclick="() => CancelBooking(booking.Id)">
-                                        ✗ Aflyse
+                                        ✗ Cancel
                                     </button>
                                 </div>
                             }
@@ -96,7 +99,7 @@
             else
             {
                 <div class="empty-state">
-                    <p>📭 Ingen bookinger i dag</p>
+                    <p>📭 No bookings today</p>
                 </div>
             }
         </div>

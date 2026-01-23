@@ -1,10 +1,8 @@
 package com.example.salon.controller;
 
 
-import com.example.salon.dto.BookingResponse;
-import com.example.salon.dto.BusinessResponse;
-import com.example.salon.dto.ServiceRequest;
-import com.example.salon.dto.ServiceResponse;
+import com.example.salon.dto.*;
+import com.example.salon.service.BusinessHoursService;
 import com.example.salon.service.BusinessOwnerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -29,6 +28,7 @@ import java.util.List;
 public class BusinessOwnerController {
 
     private final BusinessOwnerService businessOwnerService;
+    private final BusinessHoursService businessHoursService;
 
     // ============================================
     // BUSINESS INFO
@@ -166,5 +166,72 @@ public class BusinessOwnerController {
         String username = authentication.getName();
         BookingResponse booking = businessOwnerService.cancelBooking(username, bookingId);
         return ResponseEntity.ok(booking);
+    }
+
+    // ============================================
+    // BUSINESS HOURS MANAGEMENT
+    // ============================================
+
+    /**
+     * Get business hours for all days
+     * GET /api/business/hours
+     */
+    @GetMapping("/hours")
+    public ResponseEntity<List<BusinessHoursDto>> getBusinessHours(Authentication authentication) {
+        String username = authentication.getName();
+        BusinessResponse business = businessOwnerService.getMyBusiness(username);
+        List<BusinessHoursDto> hours = businessHoursService.getBusinessHours(business.getId());
+        return ResponseEntity.ok(hours);
+    }
+
+    /**
+     * Update business hours for a specific day
+     * PUT /api/business/hours/{dayOfWeek}
+     */
+    @PutMapping("/hours/{dayOfWeek}")
+    public ResponseEntity<BusinessHoursDto> updateBusinessHours(
+            Authentication authentication,
+            @PathVariable DayOfWeek dayOfWeek,
+            @Valid @RequestBody BusinessHoursDto request) {
+        String username = authentication.getName();
+        BusinessResponse business = businessOwnerService.getMyBusiness(username);
+        BusinessHoursDto hours = businessHoursService.updateBusinessHours(business.getId(), dayOfWeek, request);
+        return ResponseEntity.ok(hours);
+    }
+
+    /**
+     * Get closed dates (holidays, vacation, etc.)
+     * GET /api/business/closed-dates
+     */
+    @GetMapping("/closed-dates")
+    public ResponseEntity<List<ClosedDateDto>> getClosedDates(Authentication authentication) {
+        String username = authentication.getName();
+        BusinessResponse business = businessOwnerService.getMyBusiness(username);
+        List<ClosedDateDto> closedDates = businessHoursService.getClosedDates(business.getId());
+        return ResponseEntity.ok(closedDates);
+    }
+
+    /**
+     * Add a closed date
+     * POST /api/business/closed-dates
+     */
+    @PostMapping("/closed-dates")
+    public ResponseEntity<ClosedDateDto> addClosedDate(
+            Authentication authentication,
+            @Valid @RequestBody ClosedDateDto request) {
+        String username = authentication.getName();
+        BusinessResponse business = businessOwnerService.getMyBusiness(username);
+        ClosedDateDto closedDate = businessHoursService.addClosedDate(business.getId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(closedDate);
+    }
+
+    /**
+     * Delete a closed date
+     * DELETE /api/business/closed-dates/{closedDateId}
+     */
+    @DeleteMapping("/closed-dates/{closedDateId}")
+    public ResponseEntity<Void> deleteClosedDate(@PathVariable Long closedDateId) {
+        businessHoursService.deleteClosedDate(closedDateId);
+        return ResponseEntity.noContent().build();
     }
 }

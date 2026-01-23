@@ -28,6 +28,7 @@ public class BusinessService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final BusinessHoursService businessHoursService;
 
     @Value("${app.public.url:http://localhost:8080}")
     private String publicUrl;
@@ -82,6 +83,9 @@ public class BusinessService {
         // Step 3: Update Business with owner
         business.setOwner(owner);
         business = businessRepository.save(business);
+
+        // Step 4: Initialize default business hours (Monday-Friday 9:00-18:00)
+        businessHoursService.initializeDefaultHours(business.getId());
 
         log.info("Business created: {} with owner: {}", business.getName(), owner.getUsername());
 

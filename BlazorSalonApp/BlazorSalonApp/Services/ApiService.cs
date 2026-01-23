@@ -142,6 +142,46 @@ public class ApiService : IApiService
     }
 
     // ============================================
+    // BUSINESS HOURS
+    // ============================================
+
+    public async Task<List<BusinessHoursDto>> GetBusinessHoursAsync()
+    {
+        var response = await _interceptor.GetAsync("business/hours");
+        return await response.Content.ReadFromJsonAsync<List<BusinessHoursDto>>() 
+            ?? new List<BusinessHoursDto>();
+    }
+
+    public async Task<BusinessHoursDto> UpdateBusinessHoursAsync(DayOfWeek dayOfWeek, BusinessHoursDto request)
+    {
+        // Convert DayOfWeek to uppercase string (MONDAY, TUESDAY, etc.) for Java compatibility
+        var dayString = dayOfWeek.ToString().ToUpperInvariant();
+        var response = await _interceptor.PutAsync($"business/hours/{dayString}", request);
+        return await response.Content.ReadFromJsonAsync<BusinessHoursDto>() 
+            ?? throw new Exception("Failed to update business hours");
+    }
+
+    public async Task<List<ClosedDateDto>> GetClosedDatesAsync()
+    {
+        var response = await _interceptor.GetAsync("business/closed-dates");
+        return await response.Content.ReadFromJsonAsync<List<ClosedDateDto>>() 
+            ?? new List<ClosedDateDto>();
+    }
+
+    public async Task<ClosedDateDto> AddClosedDateAsync(ClosedDateDto request)
+    {
+        var response = await _interceptor.PostAsync("business/closed-dates", request);
+        return await response.Content.ReadFromJsonAsync<ClosedDateDto>() 
+            ?? throw new Exception("Failed to add closed date");
+    }
+
+    public async Task DeleteClosedDateAsync(long closedDateId)
+    {
+        var response = await _interceptor.DeleteAsync($"business/closed-dates/{closedDateId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // ============================================
     // PUBLIC - BOOKING
     // ============================================
 

@@ -13,31 +13,31 @@
 
     <div class="action-buttons">
         <button class="btn btn-primary" @onclick="NavigateToCreateBusiness">
-            ➕ Opret Ny Salon
+            ➕ Create New Salon
         </button>
     </div>
 
 
     @if (isLoading)
     {
-        <div class="loading">Henter data...</div>
+        <div class="loading">Loading data...</div>
     }
     else
     {
         <div class="businesses-grid">
-            <h2>Alle Saloner (@businesses.Count)</h2>
+            <h2>All Salons (@businesses.Count)</h2>
             
             @if (businesses.Any())
             {
                 <table class="businesses-table">
                     <thead>
                         <tr>
-                            <th>Navn</th>
+                            <th>Name</th>
                             <th>Slug</th>
                             <th>Status</th>
                             <th>Booking URL</th>
-                            <th>Oprettet</th>
-                            <th>Handlinger</th>
+                            <th>Created</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,18 +48,18 @@
                                 <td><code>@business.Slug</code></td>
                                 <td>
                                     <span class="status-badge @(business.Active ? "active" : "inactive")">
-                                        @(business.Active ? "Aktiv" : "Inaktiv")
+                                        @(business.Active ? "Active" : "Inactive")
                                     </span>
                                 </td>
                                 <td>
                                     <a href="@business.BookingUrl" target="_blank" class="link">
-                                        Åbn booking side
+                                        Open booking page
                                     </a>
                                 </td>
                                 <td>@business.CreatedAt.ToString("dd/MM/yyyy")</td>
                                 <td>
                                     <button class="btn btn-sm" @onclick="() => ToggleStatus(business)">
-                                        @(business.Active ? "Deaktiver" : "Aktiver")
+                                        @(business.Active ? "Deactivate" : "Activate")
                                     </button>
                                 </td>
                             </tr>
@@ -70,9 +70,9 @@
             else
             {
                 <div class="empty-state">
-                    <p>Ingen saloner oprettet endnu.</p>
+                    <p>No salons created yet.</p>
                     <button class="btn btn-primary" @onclick="NavigateToCreateBusiness">
-                        Opret den første salon
+                        Create the first salon
                     </button>
                 </div>
             }

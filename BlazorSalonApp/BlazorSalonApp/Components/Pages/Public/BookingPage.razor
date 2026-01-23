@@ -2,32 +2,32 @@
 @using BlazorSalonApp.Dto
 @inject IApiService ApiService
 
-<PageTitle>Book Tid</PageTitle>
+<PageTitle>Book Appointment</PageTitle>
 
 <div class="booking-container">
     @if (isLoading)
     {
         <div class="loading">
-            Henter services...
+            Loading services...
         </div>
     }
     else if (bookingComplete)
     {
         <div class="success-message">
-            <h1>✅ Booking Bekræftet!</h1>
+            <h1>✅ Booking Confirmed!</h1>
             <div class="confirmation-details">
                 <p><strong>Service:</strong> @selectedService?.Name</p>
-                <p><strong>Dato og tid:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'kl.' HH:mm")</p>
-                <p><strong>Varighed:</strong> @selectedService?.DurationMinutes minutter</p>
-                <p><strong>Pris:</strong> @selectedService?.Price kr</p>
+                <p><strong>Date and time:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</p>
+                <p><strong>Duration:</strong> @selectedService?.DurationMinutes minutes</p>
+                <p><strong>Price:</strong> @selectedService?.Price kr</p>
             </div>
-            <p class="info-text">Vi ses! 👋</p>
-            <button class="btn btn-primary" @onclick="BookAnother">Book en ny tid</button>
+            <p class="info-text">See you! 👋</p>
+            <button class="btn btn-primary" @onclick="BookAnother">Book another appointment</button>
         </div>
     }
     else
     {
-        <h1>Book tid</h1>
+        <h1>Book appointment</h1>
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -39,7 +39,7 @@
         <div class="booking-steps">
             <!-- Step 1: Select Service -->
             <div class="step">
-                <h2>1. Vælg service</h2>
+                <h2>1. Select service</h2>
                 <div class="services-grid">
                     @foreach (var service in services)
                     {
@@ -59,7 +59,7 @@
             {
                 <!-- Step 2: Select Date and Time using Calendar -->
                 <div class="step">
-                    <h2>2. Vælg dato og tidspunkt</h2>
+                    <h2>2. Select date and time</h2>
                     <CalendarPicker 
                         BusinessSlug="@BusinessSlug"
                         SelectedService="@selectedService.Id"
@@ -68,43 +68,43 @@
                     @if (bookingRequest.StartTime != DateTime.MinValue)
                     {
                         <div class="selected-time-display">
-                            ✓ Valgt tid: <strong>@bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'kl.' HH:mm")</strong>
+                            ✓ Selected time: <strong>@bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</strong>
                         </div>
                     }
                 </div>
 
                 <!-- Step 3: Customer Info -->
                 <div class="step">
-                    <h2>3. Dine oplysninger</h2>
+                    <h2>3. Your information</h2>
                     <EditForm Model="@bookingRequest" OnValidSubmit="HandleSubmit">
                         <div class="form-group">
-                            <label>Dit navn *</label>
-                            <InputText @bind-Value="bookingRequest.CustomerName" class="form-control" placeholder="F.eks. Peter Jensen" />
+                            <label>Your name *</label>
+                            <InputText @bind-Value="bookingRequest.CustomerName" class="form-control" placeholder="E.g. Peter Jensen" />
                         </div>
 
                         <div class="form-group">
-                            <label>Telefonnummer *</label>
-                            <InputText @bind-Value="bookingRequest.CustomerPhone" class="form-control" placeholder="F.eks. +4512345678" />
+                            <label>Phone number *</label>
+                            <InputText @bind-Value="bookingRequest.CustomerPhone" class="form-control" placeholder="E.g. +4512345678" />
                         </div>
 
                         @if (bookingRequest.StartTime != DateTime.MinValue)
                         {
                             <div class="booking-summary">
-                                <h3>Oversigt</h3>
+                                <h3>Summary</h3>
                                 <p><strong>Service:</strong> @selectedService.Name</p>
-                                <p><strong>Tidspunkt:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'kl.' HH:mm")</p>
-                                <p><strong>Varighed:</strong> @selectedService.DurationMinutes minutter</p>
-                                <p><strong>Pris:</strong> @selectedService.Price kr</p>
+                                <p><strong>Time:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</p>
+                                <p><strong>Duration:</strong> @selectedService.DurationMinutes minutes</p>
+                                <p><strong>Price:</strong> @selectedService.Price kr</p>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-large" disabled="@isSubmitting">
                                 @if (isSubmitting)
                                 {
-                                    <span>Booker...</span>
+                                    <span>Booking...</span>
                                 }
                                 else
                                 {
-                                    <span>✓ Bekræft Booking</span>
+                                    <span>✓ Confirm Booking</span>
                                 }
                             </button>
                         }
@@ -141,7 +141,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = "Kunne ikke hente services. Tjek at URL'en er korrekt.";
+            errorMessage = "Could not load services. Check that the URL is correct.";
             Console.WriteLine($"Error: {ex.Message}");
         }
         finally
@@ -185,7 +185,7 @@
             Console.WriteLine($"Error: {ex.Message}");
             Console.WriteLine($"Error type: {ex.GetType().Name}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            errorMessage = "Booking fejlede. Tidspunktet er muligvis optaget. Prøv et andet tidspunkt.";
+            errorMessage = "Booking failed. The time slot may already be taken. Please try another time.";
         }
         finally
         {

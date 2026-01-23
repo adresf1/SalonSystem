@@ -9,7 +9,7 @@
                 <!-- Common Link -->
                 <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
                     <span class="icon">🏠</span>
-                    <span>Forside</span>
+                    <span>Home</span>
                 </NavLink>
 
                 <!-- SYSTEM_ADMIN Menu -->
@@ -25,7 +25,7 @@
                         
                         <NavLink class="nav-link" href="/admin/CreateBusiness">
                             <span class="icon">➕</span>
-                            <span>Opret Salon</span>
+                            <span>Create Salon</span>
                         </NavLink>
                     </div>
                     </Authorized>
@@ -35,7 +35,7 @@
                 <AuthorizeView Roles="BUSINESS_OWNER" Context="ownerContext">
                     <Authorized>
                     <div class="menu-section">
-                        <div class="section-title">Min Salon</div>
+                        <div class="section-title">My Salon</div>
                         
                         <NavLink class="nav-link" href="/Business/BusinessDashbord">
                             <span class="icon">📊</span>
@@ -54,7 +54,7 @@
                         
                         <NavLink class="nav-link" href="/Business/Settings">
                             <span class="icon">⚙️</span>
-                            <span>Indstillinger</span>
+                            <span>Settings</span>
                         </NavLink>
                     </div>
                     </Authorized>

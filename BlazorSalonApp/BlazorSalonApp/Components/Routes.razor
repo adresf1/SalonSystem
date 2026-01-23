@@ -6,17 +6,17 @@
                     @if (context.User.Identity?.IsAuthenticated == true)
                     {
                         <div class="unauthorized-page">
-                            <h1>⛔ Ingen Adgang</h1>
-                            <p>Du har ikke tilladelse til at se denne side.</p>
-                            <a href="/" class="btn btn-primary">Gå til forsiden</a>
+                            <h1>⛔ No Access</h1>
+                            <p>You do not have permission to view this page.</p>
+                            <a href="/" class="btn btn-primary">Go to home page</a>
                         </div>
                     }
                     else
                     {
                         <div class="unauthorized-page">
-                            <h1>🔒 Login Påkrævet</h1>
-                            <p>Du skal være logget ind for at se denne side.</p>
-                            <a href="/auth/login" class="btn btn-primary">Log ind</a>
+                            <h1>🔒 Login Required</h1>
+                            <p>You need to be logged in to view this page.</p>
+                            <a href="/auth/login" class="btn btn-primary">Log in</a>
                         </div>
                     }
                 </NotAuthorized>
@@ -24,12 +24,12 @@
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <PageTitle>Ikke fundet</PageTitle>
+            <PageTitle>Not found</PageTitle>
             <LayoutView Layout="@typeof(Layout.MainLayout)">
                 <div class="not-found-page">
                     <h1>404</h1>
-                    <p>Siden blev ikke fundet.</p>
-                    <a href="/" class="btn btn-primary">Gå til forsiden</a>
+                    <p>Page not found.</p>
+                    <a href="/" class="btn btn-primary">Go to home page</a>
                 </div>
             </LayoutView>
         </NotFound>

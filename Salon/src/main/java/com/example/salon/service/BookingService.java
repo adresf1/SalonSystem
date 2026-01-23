@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,6 +35,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final BusinessRepository businessRepository;
     private final ServiceRepository serviceRepository;
+    private final BusinessHoursService businessHoursService;
 
     @Transactional
     public BookingResponse createBooking(String businessSlug, BookingRequest request) {
@@ -137,6 +139,15 @@ public class BookingService {
             throw new BusinessNotActiveException("Business is not accepting bookings");
         }
 
+        // Check if business is open on this date
+        if (!businessHoursService.isBusinessOpen(business.getId(), date)) {
+            // Return empty slots if closed
+            return AvailableTimesResponse.builder()
+                    .date(date)
+                    .timeSlots(List.of())
+                    .build();
+        }
+
         // Find and validate service
         Service service = serviceRepository.findByIdAndBusinessId(serviceId, business.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
@@ -152,22 +163,47 @@ public class BookingService {
         List<Booking> existingBookings = bookingRepository
                 .findByBusinessIdAndStartTimeBetween(business.getId(), startOfDay, endOfDay);
 
-        // Generate time slots (9:00 - 18:00 in 30 minute intervals)
-        List<AvailableTimeSlot> timeSlots = new ArrayList<>();
-        LocalTime startTime = LocalTime.of(9, 0);
-        LocalTime endTime = LocalTime.of(18, 0);
-        int intervalMinutes = 30;
+        // Get business hours for this day of week
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        com.example.salon.model.BusinessHours hours = businessHoursService.getHoursForDay(business.getId(), dayOfWeek);
+        
+        // Use business hours if available, otherwise default to 9:00-18:00
+        LocalTime startTime = (hours != null && hours.getOpenTime() != null) 
+                ? hours.getOpenTime() 
+                : LocalTime.of(9, 0);
+        LocalTime endTime = (hours != null && hours.getCloseTime() != null) 
+                ? hours.getCloseTime() 
+                : LocalTime.of(18, 0);
+        
+        LocalTime breakStart = (hours != null) ? hours.getBreakStartTime() : null;
+        LocalTime breakEnd = (hours != null) ? hours.getBreakEndTime() : null;
 
-        while (startTime.isBefore(endTime)) {
-            LocalDateTime slotStart = LocalDateTime.of(date, startTime);
+        // Generate time slots in 30 minute intervals
+        List<AvailableTimeSlot> timeSlots = new ArrayList<>();
+        int intervalMinutes = 30;
+        LocalTime currentTime = startTime;
+
+        while (currentTime.isBefore(endTime)) {
+            LocalDateTime slotStart = LocalDateTime.of(date, currentTime);
             LocalDateTime slotEnd = slotStart.plusMinutes(service.getDurationMinutes());
 
+            // Skip if slot is during break time
+            boolean isDuringBreak = false;
+            if (breakStart != null && breakEnd != null) {
+                isDuringBreak = !currentTime.isBefore(breakStart) && currentTime.isBefore(breakEnd);
+            }
+
             // Check if this slot conflicts with any existing booking
-            boolean isAvailable = !hasConflict(slotStart, slotEnd, existingBookings);
+            boolean isAvailable = !isDuringBreak && !hasConflict(slotStart, slotEnd, existingBookings);
 
             // Don't allow booking in the past
             if (slotStart.isBefore(LocalDateTime.now())) {
                 isAvailable = false;
+            }
+
+            // Don't add slot if it would end after closing time
+            if (slotEnd.toLocalTime().isAfter(endTime)) {
+                break;
             }
 
             timeSlots.add(AvailableTimeSlot.builder()
@@ -176,7 +212,7 @@ public class BookingService {
                     .available(isAvailable)
                     .build());
 
-            startTime = startTime.plusMinutes(intervalMinutes);
+            currentTime = currentTime.plusMinutes(intervalMinutes);
         }
 
         return AvailableTimesResponse.builder()

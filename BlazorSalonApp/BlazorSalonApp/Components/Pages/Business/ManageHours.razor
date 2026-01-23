@@ -1,0 +1,359 @@
+@page "/business/hours"
+@using BlazorSalonApp.Dto
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@inject IApiService ApiService
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Opening Hours</PageTitle>
+
+<div class="hours-container">
+    <h1>🕐 Opening Hours & Closed Dates</h1>
+
+    @if (isLoading)
+    {
+        <div class="loading">Loading data...</div>
+    }
+    else
+    {
+        <div class="sections-grid">
+            <!-- Business Hours Section -->
+            <div class="section">
+                <h2>📅 Weekly Opening Hours</h2>
+                <div class="hours-list">
+                    @foreach (var day in Enum.GetValues<DayOfWeek>().OrderBy(GetDayOrder))
+                    {
+                        var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == day);
+                        <div class="day-row">
+                            <div class="day-name">@GetDayName(day)</div>
+                            <div class="day-controls">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" 
+                                           checked="@(hours?.IsOpen ?? false)"
+                                           @onchange="@(e => ToggleDay(day, (bool)e.Value!))" />
+                                    <span class="slider"></span>
+                                </label>
+                                @if (hours?.IsOpen == true)
+                                {
+                                    <div class="time-inputs">
+                                        <input type="time" 
+                                               value="@FormatTimeSpan(hours.OpenTime)"
+                                               @onchange="@(e => UpdateOpenTime(day, e.Value?.ToString()))" />
+                                        <span>-</span>
+                                        <input type="time" 
+                                               value="@FormatTimeSpan(hours.CloseTime)"
+                                               @onchange="@(e => UpdateCloseTime(day, e.Value?.ToString()))" />
+                                    </div>
+                                    <button class="btn-icon" @onclick="() => ShowBreakDialog(day, hours)" title="Add break">
+                                        ☕
+                                    </button>
+                                    @if (hours.BreakStartTime != null)
+                                    {
+                                        <span class="break-info">
+                                            Break: @FormatTimeSpan(hours.BreakStartTime) - @FormatTimeSpan(hours.BreakEndTime)
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="closed-label">Closed</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Closed Dates Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🚫 Closed Dates (Vacation, Holidays)</h2>
+                    <button class="btn btn-primary btn-sm" @onclick="ShowAddClosedDate">+ Add</button>
+                </div>
+                
+                @if (closedDates.Any())
+                {
+                    <div class="closed-dates-list">
+                        @foreach (var closedDate in closedDates.OrderBy(d => d.ClosedDate))
+                        {
+                            <div class="closed-date-card">
+                                <div class="date-info">
+                                    <strong>@closedDate.ClosedDate.ToString("dddd d. MMMM yyyy")</strong>
+                                    @if (!string.IsNullOrEmpty(closedDate.Reason))
+                                    {
+                                        <div class="reason">@closedDate.Reason</div>
+                                    }
+                                </div>
+                                <button class="btn-icon btn-danger" @onclick="() => DeleteClosedDate(closedDate.Id!.Value)">
+                                    🗑️
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">No closed dates</div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Break Time Dialog -->
+    @if (showBreakDialog)
+    {
+        <div class="dialog-overlay" @onclick="CloseBreakDialog">
+            <div class="dialog" @onclick:stopPropagation="true">
+                <div class="dialog-header">
+                    <h2>☕ Break - @GetDayName(selectedDay)</h2>
+                    <button class="btn-close" @onclick="CloseBreakDialog">✕</button>
+                </div>
+                <div class="form-group">
+                    <label>Start time</label>
+                    <input type="time" class="form-control" @bind="breakStart" @bind:format="HH:mm" />
+                </div>
+                <div class="form-group">
+                    <label>End time</label>
+                    <input type="time" class="form-control" @bind="breakEnd" @bind:format="HH:mm" />
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" @onclick="RemoveBreak">Remove break</button>
+                    <button class="btn btn-primary" @onclick="SaveBreak">Save</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Add Closed Date Dialog -->
+    @if (showClosedDateDialog)
+    {
+        <div class="dialog-overlay" @onclick="CloseClosedDateDialog">
+            <div class="dialog" @onclick:stopPropagation="true">
+                <div class="dialog-header">
+                    <h2>Add Closed Date</h2>
+                    <button class="btn-close" @onclick="CloseClosedDateDialog">✕</button>
+                </div>
+                <EditForm Model="newClosedDate" OnValidSubmit="SaveClosedDate">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <InputDate @bind-Value="newClosedDate.ClosedDate" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Reason (optional)</label>
+                        <InputText @bind-Value="newClosedDate.Reason" class="form-control" placeholder="e.g. Vacation, Christmas, etc." />
+                    </div>
+                    <div class="dialog-actions">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseClosedDateDialog">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<BusinessHoursDto> businessHours = new();
+    private List<ClosedDateDto> closedDates = new();
+    private bool isLoading = true;
+    private bool showBreakDialog = false;
+    private bool showClosedDateDialog = false;
+    private DayOfWeek selectedDay;
+    private TimeOnly? breakStart;
+    private TimeOnly? breakEnd;
+    private ClosedDateDto newClosedDate = new() { ClosedDate = DateTime.Today };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/auth/login");
+            return;
+        }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            var hoursTask = ApiService.GetBusinessHoursAsync();
+            var closedTask = ApiService.GetClosedDatesAsync();
+            
+            await Task.WhenAll(hoursTask, closedTask);
+            
+            businessHours = await hoursTask;
+            closedDates = await closedTask;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleDay(DayOfWeek day, bool isOpen)
+    {
+        try
+        {
+            var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == day);
+            if (hours == null)
+            {
+                hours = new BusinessHoursDto { DayOfWeek = day };
+                businessHours.Add(hours);
+            }
+
+            hours.IsOpen = isOpen;
+            if (isOpen && hours.OpenTime == null)
+            {
+                hours.OpenTime = TimeSpan.FromHours(9);
+                hours.CloseTime = TimeSpan.FromHours(18);
+            }
+
+            Console.WriteLine($"Updating {day}: IsOpen={isOpen}");
+            await ApiService.UpdateBusinessHoursAsync(day, hours);
+            Console.WriteLine($"✓ {day} updated successfully");
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error updating {day}: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateOpenTime(DayOfWeek day, string? timeStr)
+    {
+        if (string.IsNullOrEmpty(timeStr)) return;
+        
+        var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == day);
+        if (hours != null && TimeSpan.TryParse(timeStr, out var time))
+        {
+            hours.OpenTime = time;
+            await ApiService.UpdateBusinessHoursAsync(day, hours);
+        }
+    }
+
+    private async Task UpdateCloseTime(DayOfWeek day, string? timeStr)
+    {
+        if (string.IsNullOrEmpty(timeStr)) return;
+        
+        var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == day);
+        if (hours != null && TimeSpan.TryParse(timeStr, out var time))
+        {
+            hours.CloseTime = time;
+            await ApiService.UpdateBusinessHoursAsync(day, hours);
+        }
+    }
+
+    private void ShowBreakDialog(DayOfWeek day, BusinessHoursDto hours)
+    {
+        selectedDay = day;
+        breakStart = hours.BreakStartTime.HasValue ? TimeOnly.FromTimeSpan(hours.BreakStartTime.Value) : null;
+        breakEnd = hours.BreakEndTime.HasValue ? TimeOnly.FromTimeSpan(hours.BreakEndTime.Value) : null;
+        showBreakDialog = true;
+    }
+
+    private async Task SaveBreak()
+    {
+        var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == selectedDay);
+        if (hours != null)
+        {
+            hours.BreakStartTime = breakStart?.ToTimeSpan();
+            hours.BreakEndTime = breakEnd?.ToTimeSpan();
+            await ApiService.UpdateBusinessHoursAsync(selectedDay, hours);
+            await LoadData();
+        }
+        CloseBreakDialog();
+    }
+
+    private async Task RemoveBreak()
+    {
+        var hours = businessHours.FirstOrDefault(h => h.DayOfWeek == selectedDay);
+        if (hours != null)
+        {
+            hours.BreakStartTime = null;
+            hours.BreakEndTime = null;
+            await ApiService.UpdateBusinessHoursAsync(selectedDay, hours);
+            await LoadData();
+        }
+        CloseBreakDialog();
+    }
+
+    private void CloseBreakDialog()
+    {
+        showBreakDialog = false;
+        breakStart = null;
+        breakEnd = null;
+    }
+
+    private void ShowAddClosedDate()
+    {
+        newClosedDate = new ClosedDateDto { ClosedDate = DateTime.Today };
+        showClosedDateDialog = true;
+    }
+
+    private async Task SaveClosedDate()
+    {
+        try
+        {
+            await ApiService.AddClosedDateAsync(newClosedDate);
+            await LoadData();
+            CloseClosedDateDialog();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding closed date: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteClosedDate(long id)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Delete this closed date?"))
+            return;
+
+        try
+        {
+            await ApiService.DeleteClosedDateAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting closed date: {ex.Message}");
+        }
+    }
+
+    private void CloseClosedDateDialog()
+    {
+        showClosedDateDialog = false;
+    }
+
+    private string GetDayName(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => "Monday",
+        DayOfWeek.Tuesday => "Tuesday",
+        DayOfWeek.Wednesday => "Wednesday",
+        DayOfWeek.Thursday => "Thursday",
+        DayOfWeek.Friday => "Friday",
+        DayOfWeek.Saturday => "Saturday",
+        DayOfWeek.Sunday => "Sunday",
+        _ => day.ToString()
+    };
+
+    private int GetDayOrder(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
+
+    private string FormatTimeSpan(TimeSpan? time)
+    {
+        if (time == null) return string.Empty;
+        return $"{time.Value.Hours:D2}:{time.Value.Minutes:D2}";
+    }
+}

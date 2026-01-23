@@ -28,6 +28,13 @@ public interface IApiService
     Task<BookingResponse> CompleteBookingAsync(long bookingId);
     Task<BookingResponse> CancelBookingAsync(long bookingId);
     
+    // Business Owner - Business Hours
+    Task<List<BusinessHoursDto>> GetBusinessHoursAsync();
+    Task<BusinessHoursDto> UpdateBusinessHoursAsync(DayOfWeek dayOfWeek, BusinessHoursDto request);
+    Task<List<ClosedDateDto>> GetClosedDatesAsync();
+    Task<ClosedDateDto> AddClosedDateAsync(ClosedDateDto request);
+    Task DeleteClosedDateAsync(long closedDateId);
+    
     // Public - Booking
     Task<List<ServiceResponse>> GetPublicServicesAsync(string businessSlug);
     Task<BookingResponse> CreatePublicBookingAsync(string businessSlug, BookingRequest request);
