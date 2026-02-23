@@ -1,0 +1,65 @@
+﻿<div class="nav-menu">
+    <div class="brand">
+        <h3>✂️ Salon Booking</h3>
+    </div>
+
+    <nav class="menu-items">
+        <AuthorizeView>
+            <Authorized>
+                <!-- Common Link -->
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                    <span class="icon">🏠</span>
+                    <span>Home</span>
+                </NavLink>
+
+                <!-- SYSTEM_ADMIN Menu -->
+                <AuthorizeView Roles="SYSTEM_ADMIN" Context="adminContext">
+                    <Authorized>
+                    <div class="menu-section">
+                        <div class="section-title">Administrator</div>
+                        
+                        <NavLink class="nav-link" href="/admin/Dashboard">
+                            <span class="icon">📊</span>
+                            <span>Dashboard</span>
+                        </NavLink>
+                        
+                        <NavLink class="nav-link" href="/admin/CreateBusiness">
+                            <span class="icon">➕</span>
+                            <span>Create Salon</span>
+                        </NavLink>
+                    </div>
+                    </Authorized>
+                </AuthorizeView>
+
+                <!-- BUSINESS_OWNER Menu -->
+                <AuthorizeView Roles="BUSINESS_OWNER" Context="ownerContext">
+                    <Authorized>
+                    <div class="menu-section">
+                        <div class="section-title">My Salon</div>
+                        
+                        <NavLink class="nav-link" href="/Business/BusinessDashbord">
+                            <span class="icon">📊</span>
+                            <span>Dashboard</span>
+                        </NavLink>
+                        
+                        <NavLink class="nav-link" href="/Business/ManageServices">
+                            <span class="icon">✂️</span>
+                            <span>Services</span>
+                        </NavLink>
+                        
+                        <NavLink class="nav-link" href="/Business/ManageBookings">
+                            <span class="icon">📅</span>
+                            <span>Bookinger</span>
+                        </NavLink>
+                        
+                        <NavLink class="nav-link" href="/Business/Settings">
+                            <span class="icon">⚙️</span>
+                            <span>Settings</span>
+                        </NavLink>
+                    </div>
+                    </Authorized>
+                </AuthorizeView>
+            </Authorized>
+        </AuthorizeView>
+    </nav>
+</div>

@@ -1,0 +1,166 @@
+@using BlazorSalonApp.Dto
+
+<div class="calendar-container">
+    <div class="calendar-header">
+        <button class="nav-btn" @onclick="PreviousWeek">◀</button>
+        <h3>@CurrentWeekStart.ToString("MMMM yyyy")</h3>
+        <button class="nav-btn" @onclick="NextWeek">▶</button>
+    </div>
+
+    <div class="calendar-grid">
+        @foreach (var day in GetWeekDays())
+        {
+            <div class="calendar-day @(day.Date == SelectedDate?.Date ? "selected" : "") @(day.Date < DateTime.Today ? "past" : "")"
+                 @onclick="() => SelectDate(day)">
+                <div class="day-header">
+                    <div class="day-name">@day.ToString("ddd")</div>
+                    <div class="day-number">@day.Day</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (SelectedDate.HasValue && SelectedService != null)
+    {
+        <div class="time-slots-section">
+            <h4>Select time - @SelectedDate.Value.ToString("dddd, d. MMMM")</h4>
+            
+            @if (isLoadingSlots)
+            {
+                <div class="loading-slots">
+                    <p>Loading available times...</p>
+                </div>
+            }
+            else if (availableSlots == null || !availableSlots.TimeSlots.Any())
+            {
+                <div class="no-slots">
+                    <p>No available times this day</p>
+                </div>
+            }
+            else
+            {
+                <div class="time-slots-grid">
+                    @foreach (var slot in availableSlots.TimeSlots)
+                    {
+                        <button 
+                            class="time-slot @(slot.Available ? "available" : "occupied") @(SelectedTimeSlot?.StartTime == slot.StartTime ? "selected" : "")"
+                            disabled="@(!slot.Available)"
+                            @onclick="() => SelectTimeSlot(slot)">
+                            @slot.StartTime.ToString("HH:mm")
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public long? SelectedService { get; set; }
+    [Parameter] public EventCallback<DateTime> OnTimeSelected { get; set; }
+    [Parameter] public string BusinessSlug { get; set; } = string.Empty;
+    [Inject] private IApiService ApiService { get; set; } = default!;
+
+    private DateTime CurrentWeekStart { get; set; } = DateTime.Today;
+    private DateTime? SelectedDate { get; set; }
+    private AvailableTimeSlot? SelectedTimeSlot { get; set; }
+    private AvailableTimesResponse? availableSlots;
+    private bool isLoadingSlots = false;
+    private long? _previousSelectedService;
+
+    protected override void OnInitialized()
+    {
+        // Start from the beginning of current week
+        CurrentWeekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + (int)DayOfWeek.Monday);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Only reload if service actually changed (not on every render)
+        if (SelectedService.HasValue && SelectedService != _previousSelectedService)
+        {
+            _previousSelectedService = SelectedService;
+            // Reset selected time slot when service changes
+            SelectedTimeSlot = null;
+            // Reload slots if we have a selected date
+            if (SelectedDate.HasValue)
+            {
+                await LoadAvailableSlots();
+            }
+        }
+    }
+
+    private List<DateTime> GetWeekDays()
+    {
+        var days = new List<DateTime>();
+        for (int i = 0; i < 7; i++)
+        {
+            days.Add(CurrentWeekStart.AddDays(i));
+        }
+        return days;
+    }
+
+    private void PreviousWeek()
+    {
+        CurrentWeekStart = CurrentWeekStart.AddDays(-7);
+        SelectedDate = null;
+        SelectedTimeSlot = null;
+        availableSlots = null;
+    }
+
+    private void NextWeek()
+    {
+        CurrentWeekStart = CurrentWeekStart.AddDays(7);
+        SelectedDate = null;
+        SelectedTimeSlot = null;
+        availableSlots = null;
+    }
+
+    private async Task SelectDate(DateTime date)
+    {
+        if (date < DateTime.Today || !SelectedService.HasValue)
+            return;
+
+        SelectedDate = date;
+        SelectedTimeSlot = null;
+        await LoadAvailableSlots();
+    }
+
+    private async Task LoadAvailableSlots()
+    {
+        if (!SelectedDate.HasValue || !SelectedService.HasValue)
+            return;
+
+        try
+        {
+            isLoadingSlots = true;
+            Console.WriteLine($"Loading slots for service {SelectedService.Value} on {SelectedDate.Value:yyyy-MM-dd}");
+            
+            availableSlots = await ApiService.GetAvailableTimeSlotsAsync(
+                BusinessSlug, 
+                SelectedDate.Value, 
+                SelectedService.Value);
+                
+            Console.WriteLine($"Loaded {availableSlots?.TimeSlots?.Count ?? 0} time slots");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading slots: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            availableSlots = null;
+        }
+        finally
+        {
+            isLoadingSlots = false;
+        }
+    }
+
+    private async Task SelectTimeSlot(AvailableTimeSlot slot)
+    {
+        if (!slot.Available)
+            return;
+
+        SelectedTimeSlot = slot;
+        await OnTimeSelected.InvokeAsync(slot.StartTime);
+    }
+}

@@ -1,0 +1,203 @@
+﻿@page "/book/{BusinessSlug}"
+@using BlazorSalonApp.Dto
+@inject IApiService ApiService
+
+<PageTitle>Book Appointment</PageTitle>
+
+<div class="booking-container">
+    @if (isLoading)
+    {
+        <div class="loading">
+            Loading services...
+        </div>
+    }
+    else if (bookingComplete)
+    {
+        <div class="success-message">
+            <h1>✅ Booking Confirmed!</h1>
+            <div class="confirmation-details">
+                <p><strong>Service:</strong> @selectedService?.Name</p>
+                <p><strong>Date and time:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</p>
+                <p><strong>Duration:</strong> @selectedService?.DurationMinutes minutes</p>
+                <p><strong>Price:</strong> @selectedService?.Price kr</p>
+            </div>
+            <p class="info-text">See you! 👋</p>
+            <button class="btn btn-primary" @onclick="BookAnother">Book another appointment</button>
+        </div>
+    }
+    else
+    {
+        <h1>Book appointment</h1>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">
+                @errorMessage
+            </div>
+        }
+
+        <div class="booking-steps">
+            <!-- Step 1: Select Service -->
+            <div class="step">
+                <h2>1. Select service</h2>
+                <div class="services-grid">
+                    @foreach (var service in services)
+                    {
+                        <div class="service-card @(selectedService?.Id == service.Id ? "selected" : "")" 
+                             @onclick="() => SelectService(service)">
+                            <h3>@service.Name</h3>
+                            <div class="service-details">
+                                <span>⏱️ @service.DurationMinutes min</span>
+                                <span class="price">@service.Price kr</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (selectedService != null)
+            {
+                <!-- Step 2: Select Date and Time using Calendar -->
+                <div class="step">
+                    <h2>2. Select date and time</h2>
+                    <CalendarPicker 
+                        BusinessSlug="@BusinessSlug"
+                        SelectedService="@selectedService.Id"
+                        OnTimeSelected="HandleTimeSelected" />
+                    
+                    @if (bookingRequest.StartTime != DateTime.MinValue)
+                    {
+                        <div class="selected-time-display">
+                            ✓ Selected time: <strong>@bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</strong>
+                        </div>
+                    }
+                </div>
+
+                <!-- Step 3: Customer Info -->
+                <div class="step">
+                    <h2>3. Your information</h2>
+                    <EditForm Model="@bookingRequest" OnValidSubmit="HandleSubmit">
+                        <div class="form-group">
+                            <label>Your name *</label>
+                            <InputText @bind-Value="bookingRequest.CustomerName" class="form-control" placeholder="E.g. Peter Jensen" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Phone number *</label>
+                            <InputText @bind-Value="bookingRequest.CustomerPhone" class="form-control" placeholder="E.g. +4512345678" />
+                        </div>
+
+                        @if (bookingRequest.StartTime != DateTime.MinValue)
+                        {
+                            <div class="booking-summary">
+                                <h3>Summary</h3>
+                                <p><strong>Service:</strong> @selectedService.Name</p>
+                                <p><strong>Time:</strong> @bookingRequest.StartTime.ToString("dddd d. MMMM yyyy 'at' HH:mm")</p>
+                                <p><strong>Duration:</strong> @selectedService.DurationMinutes minutes</p>
+                                <p><strong>Price:</strong> @selectedService.Price kr</p>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span>Booking...</span>
+                                }
+                                else
+                                {
+                                    <span>✓ Confirm Booking</span>
+                                }
+                            </button>
+                        }
+                    </EditForm>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string BusinessSlug { get; set; } = string.Empty;
+
+    private List<ServiceResponse> services = new();
+    private ServiceResponse? selectedService;
+    private BookingRequest bookingRequest = new() { StartTime = DateTime.MinValue };
+    private bool isLoading = true;
+    private bool isSubmitting;
+    private bool bookingComplete;
+    private string? errorMessage;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServices();
+    }
+
+    private async Task LoadServices()
+    {
+        try
+        {
+            isLoading = true;
+            services = await ApiService.GetPublicServicesAsync(BusinessSlug);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Could not load services. Check that the URL is correct.";
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectService(ServiceResponse service)
+    {
+        selectedService = service;
+        bookingRequest.ServiceId = service.Id;
+        bookingRequest.StartTime = DateTime.MinValue; // Reset time when changing service
+    }
+
+    private void HandleTimeSelected(DateTime selectedTime)
+    {
+        bookingRequest.StartTime = selectedTime;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+
+            Console.WriteLine($"Submitting booking - Name: {bookingRequest.CustomerName}, Phone: {bookingRequest.CustomerPhone}, StartTime: {bookingRequest.StartTime}");
+            
+            await ApiService.CreatePublicBookingAsync(BusinessSlug, bookingRequest);
+            bookingComplete = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"HTTP Error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            errorMessage = $"Booking fejlede: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Error type: {ex.GetType().Name}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            errorMessage = "Booking failed. The time slot may already be taken. Please try another time.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void BookAnother()
+    {
+        bookingComplete = false;
+        selectedService = null;
+        bookingRequest = new() { StartTime = DateTime.MinValue };
+        errorMessage = null;
+    }
+}

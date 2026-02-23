@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: salon-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - salon-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Java Spring Boot Backend
+  backend:
+    build:
+      context: ./Salon
+      dockerfile: Dockerfile
+    container_name: salon-backend
+    environment:
+      SERVER_SSL_ENABLED: "false"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - salon-network
+    restart: unless-stopped
+
+  # Blazor Frontend
+  frontend:
+    build:
+      context: ./BlazorSalonApp
+      dockerfile: BlazorSalonApp/Dockerfile
+    container_name: salon-frontend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      ApiBaseUrl: http://backend:8080
+    ports:
+      - "8081:8081"
+    depends_on:
+      - backend
+    networks:
+      - salon-network
+    restart: unless-stopped
+
+networks:
+  salon-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

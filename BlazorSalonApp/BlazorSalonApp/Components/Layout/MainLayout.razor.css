@@ -1,0 +1,22 @@
+.content {
+    padding: 2rem;
+    max-width: 1400px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        position: static;
+        height: auto;
+    }
+
+    main {
+        margin-left: 0;
+    }
+
+    .top-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

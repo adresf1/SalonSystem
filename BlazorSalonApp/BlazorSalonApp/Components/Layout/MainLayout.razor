@@ -1,0 +1,53 @@
+﻿@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="page">
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <main>
+        <div class="top-row px-4">
+            <AuthorizeView Context="userContext">
+                <Authorized>
+                    <div class="user-info">
+                        <span class="username">👤 @userContext.User.Identity?.Name</span>
+                        <span class="role-badge">@GetRoleName(userContext)</span>
+                    </div>
+                    <button class="btn btn-logout" @onclick="Logout">🚪 Log ud</button>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/Login" class="btn btn-login">Log ind</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/auth/Login");
+    }
+
+    private string GetRoleName(AuthenticationState context)
+    {
+        var role = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        return role switch
+        {
+            "SYSTEM_ADMIN" => "Admin",
+            "BUSINESS_OWNER" => "Salon Ejer",
+            _ => "Bruger"
+        };
+    }
+}

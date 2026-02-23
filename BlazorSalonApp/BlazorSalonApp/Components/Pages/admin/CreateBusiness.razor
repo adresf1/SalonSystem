@@ -1,0 +1,166 @@
+﻿@page "/admin/businesses/create"
+@attribute [Authorize(Roles = "SYSTEM_ADMIN")]
+@using BlazorSalonApp.Dto
+@using BlazorSalonApp.Services
+@using Microsoft.AspNetCore.Authorization
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Create Salon</PageTitle>
+
+<div class="create-container">
+    <h1>Create New Salon</h1>
+
+    @if (_createdBusiness != null)
+    {
+        <div class="success-card">
+            <h2>✅ Salon Created!</h2>
+
+            <div class="credentials">
+                <h3>Send these details to the owner:</h3>
+
+                <div class="credential-item">
+                    <strong>Email:</strong> @_createdBusiness.OwnerEmail
+                </div>
+
+                <div class="credential-item">
+                    <strong>Username:</strong> <code>@_createdBusiness.OwnerUsername</code>
+                </div>
+
+                <div class="credential-item">
+                    <strong>Temporary password:</strong> <code>@_createdBusiness.TemporaryPassword</code>
+                </div>
+
+                <div class="credential-item">
+                    <strong>Booking URL:</strong>
+                    <a href="@_createdBusiness.BookingUrl" target="_blank">@_createdBusiness.BookingUrl</a>
+                </div>
+            </div>
+
+            <div class="email-template">
+                <h4>Email Template:</h4>
+                <pre>@GetEmailTemplate()</pre>
+                <button class="btn btn-secondary" @onclick="CopyToClipboard">📋 Copy Email</button>
+            </div>
+
+            <button class="btn btn-primary" @onclick="CreateAnother">Create Another Salon</button>
+            <button class="btn btn-secondary" @onclick="BackToDashboard">Back to Dashboard</button>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">
+                @_errorMessage
+            </div>
+        }
+
+        <EditForm Model="@_businessRequest" OnValidSubmit="HandleSubmit" class="business-form">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label>Salon Name *</label>
+                <InputText @bind-Value="_businessRequest.Name" class="form-control" placeholder="e.g. Premium Barber Shop" />
+                <small>This name is shown to customers</small>
+            </div>
+
+            <div class="form-group">
+                <label>Slug (URL) *</label>
+                <InputText @bind-Value="_businessRequest.Slug" class="form-control" placeholder="e.g. premium-barber" />
+                <small>Only lowercase letters, numbers and hyphens. Will become: /book/<strong>@_businessRequest.Slug</strong></small>
+            </div>
+
+            <div class="form-group">
+                <label>Owner Email *</label>
+                <InputText @bind-Value="_businessRequest.OwnerEmail" class="form-control" placeholder="e.g. john@barber.dk" />
+                <small>Login details will be sent to this email</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" disabled="@_isLoading">
+                    @if (_isLoading)
+                    {
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <span>Create Salon</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="BackToDashboard">Cancel</button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private BusinessRequest _businessRequest = new();
+    private BusinessWithOwnerResponse? _createdBusiness;
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            _createdBusiness = await ApiService.CreateBusinessAsync(_businessRequest);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error creating salon: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetEmailTemplate()
+    {
+        if (_createdBusiness == null) return "";
+
+        return $@"Hello!
+
+Your salon '{_createdBusiness.BusinessName}' has been created in the booking system.
+
+LOGIN DETAILS:
+Username: {_createdBusiness.OwnerUsername}
+Password: {_createdBusiness.TemporaryPassword}
+
+Log in here: http://localhost:5000/login
+
+BOOKING URL (share with customers):
+{_createdBusiness.BookingUrl}
+
+After logging in, you can:
+- Add your services (haircut, shaving, etc.)
+- View today's bookings
+- Manage upcoming appointments
+
+Best regards
+Booking System";
+    }
+
+    private void CopyToClipboard()
+    {
+        // Note: Requires JavaScript interop in production
+        Console.WriteLine("Email template copied!");
+    }
+
+    private void CreateAnother()
+    {
+        _businessRequest = new();
+        _createdBusiness = null;
+        _errorMessage = null;
+    }
+
+    private void BackToDashboard()
+    {
+        Navigation.NavigateTo("/admin/dashboard");
+    }
+}
+
